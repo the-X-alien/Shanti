@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, BellOff, Send, UserPlus, Eye } from 'lucide-react'
+import { Bell, BellOff, Send, UserPlus, Eye, AlertCircle } from 'lucide-react'
 import { useCognitiveLoad } from '@/context/CognitiveLoadContext'
 import { fadeUp, slideInRight } from '@/lib/animations'
 import { cn } from '@/lib/utils'
@@ -22,28 +22,53 @@ function TrafficDot({ color, label }: { color: TrafficLight; label?: string }) {
   )
 }
 
+async function sendNudgeEmail(email: string, status: TrafficLight): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/send-nudge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, status }),
+    })
+    if (!res.ok) return false
+    const data = await res.json()
+    return data.sent === true
+  } catch {
+    return false
+  }
+}
+
 export default function TrustedContact() {
   const { state, dispatch } = useCognitiveLoad()
   const [showContactView, setShowContactView] = useState(false)
   const [contactInput, setContactInput] = useState('')
   const [checkedIn, setCheckedIn] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
 
   const trafficLight: TrafficLight = state.cli > 75 ? 'red' : state.cli > 40 ? 'yellow' : 'green'
 
   const handleSaveContact = () => {
-    if (contactInput.trim()) {
-      dispatch({ type: 'SET_TRUSTED_CONTACT', contact: contactInput.trim() })
+    const val = contactInput.trim()
+    if (!val) return
+    if (!val.includes('@') || !val.includes('.')) {
+      setEmailError('Enter a valid email address')
+      return
     }
+    setEmailError(null)
+    dispatch({ type: 'SET_TRUSTED_CONTACT', contact: val })
   }
 
   const handleToggleOptIn = () => {
-      dispatch({ type: 'SET_CONTACT_OPT_IN', optIn: !state.contactOptIn })
+    dispatch({ type: 'SET_CONTACT_OPT_IN', optIn: !state.contactOptIn })
   }
 
-  const handleCheckIn = () => {
+  const handleCheckIn = async () => {
     setCheckedIn(true)
     if (state.cli > 75 && state.contactOptIn && state.trustedContact) {
       dispatch({ type: 'SEND_NOTIFICATION' })
+      const sent = await sendNudgeEmail(state.trustedContact, 'red')
+      if (!sent) {
+        setEmailError('Email send failed — check the API key on Vercel')
+      }
       setShowContactView(true)
     }
     setTimeout(() => setCheckedIn(false), 2000)
@@ -94,13 +119,19 @@ export default function TrustedContact() {
 
           <div className="flex items-center gap-2">
             <input
-              type="text"
+              type="email"
               value={contactInput}
-              onChange={(e) => setContactInput(e.target.value)}
-              placeholder="Phone or email (simulated)"
+              onChange={(e) => { setContactInput(e.target.value); setEmailError(null) }}
+              placeholder="friend@example.com"
               className="flex-1 glass-editor rounded-xs px-3 py-2 font-mono text-caption uppercase
                 text-pure placeholder-fog outline-none focus:border-violet"
             />
+            {emailError && (
+              <p className="font-mono text-caption text-amber flex items-center gap-1 mt-1">
+                <AlertCircle size={10} />
+                {emailError}
+              </p>
+            )}
             <button
               onClick={handleSaveContact}
               disabled={!contactInput.trim() || state.contactOptIn}
