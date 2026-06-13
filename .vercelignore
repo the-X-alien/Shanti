@@ -1,0 +1,15 @@
+node_modules
+.git
+.gitignore
+release
+dist-electron
+.jdks
+IdeaProjects
+PycharmProjects
+.agents
+.claude
+.opencode
+*.md
+*.exe
+*.dmg
+*.zip

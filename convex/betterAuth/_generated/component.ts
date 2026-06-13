@@ -22,4 +22,8 @@ import type { FunctionReference } from "convex/server";
  * ```
  */
 export type ComponentApi<Name extends string | undefined = string | undefined> =
-  {};
+  {
+    auth: {
+      getAuthUser: FunctionReference<"query", "internal", {}, any, Name>;
+    };
+  };
