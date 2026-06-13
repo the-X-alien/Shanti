@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth"
-import { convex } from "@convex-dev/better-auth/plugins"
+import { convex, crossDomain } from "@convex-dev/better-auth/plugins"
 import { createClient } from "@convex-dev/better-auth"
 import { components } from "../_generated/api"
 import type { GenericCtx } from "@convex-dev/better-auth"
@@ -15,15 +15,19 @@ export const authComponent = createClient<DataModel, typeof authSchema>(
   },
 )
 
+export const { getAuthUser } = authComponent.clientApi()
+
+const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:5173"
+
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
   return {
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5173",
+    baseURL,
     secret: process.env.BETTER_AUTH_SECRET || "",
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
     },
-    plugins: [convex({ authConfig })],
+    plugins: [convex({ authConfig }), crossDomain({ siteUrl: baseURL })],
   } satisfies Parameters<typeof betterAuth>[0]
 }
 

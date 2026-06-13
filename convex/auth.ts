@@ -11,4 +11,6 @@ export const authComponent = createClient<DataModel, typeof authSchema>(
   },
 )
 
+export const { getAuthUser } = authComponent.clientApi()
+
 export type Auth = typeof authComponent
