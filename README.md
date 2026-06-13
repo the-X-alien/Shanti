@@ -1,67 +1,57 @@
-# Mental Tachometer
+# Wellness Companion
 
-A real-time cognitive load monitor that tracks browsing patterns to detect and prevent burnout. Available as a browser extension (Chrome + Firefox) and a live web dashboard.
+A cross-platform mental wellness desktop app that monitors computer activity via AI to detect stress, triggers guided breathing exercises, and sends scheduled check-in emails.
 
-## Browser Extension (Primary)
+## Features
 
-Monitors you throughout the day — tab switches, idle time, keystroke patterns — and computes a live Cognitive Load Index (CLI). When CLI exceeds 75%, triggers an overload overlay with a guided breathing decompression exercise.
+- **AI Stress Detection** — background monitor tracks window switches, idle time, typing patterns — analyzed by AI (Hack Club AI + OpenRouter free) every 30 seconds
+- **Guided Breathing** — full-screen breathing exercise (4s inhale / 2s hold / 6s exhale, 4 cycles) triggered by stress or manually
+- **Scheduled Check-ins** — set email frequency (hourly / daily / weekly / monthly / yearly) — Resend sends wellness reminders automatically
+- **Desktop App** — runs in system tray, launches at startup, live tray icon changes color with stress level
+- **Auto-Update** — checks GitHub Releases for updates, one-click install
+- **Dual Theme** — cinematic dark mode + Air light mode
 
-### How to Install
+## Download
 
-**Chrome:**
-1. Open `chrome://extensions`
-2. Enable "Developer mode" (toggle in top-right)
-3. Click "Load unpacked"
-4. Select the `extension/` folder in this project
-
-**Firefox:**
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Select `extension/manifest.json`
-
-### What It Monitors
-
-- **Tab switches** — counts how often you switch context (background tab tracking)
-- **Delete spikes** — monitors Backspace/Delete keystroke ratio via content script
-- **Idle time** — detects micro-stuttering via `chrome.idle` API
-- **CLI formula** — `(Task Complexity × Work Hours) / Sleep Hours` + telemetry penalties
-
-### Features
-
-| Feature | Description |
-|---------|-------------|
-| Popup dashboard | Real-time CLI gauge, telemetry stats, check-in button |
-| Fault code display | Shows diagnostic codes when overloaded |
-| Overload overlay | Full-screen breathing exercise with timer |
-| Trusted contact | Privacy-preserving nudge (red/yellow/green only) |
-| Daily check-in | Logs once per day; sends nudge if CLI is red |
-| Resend email nudge | Optional email to trusted contact via Vercel API |
-| CLI formula sliders | Adjust base formula in popup settings |
-
-### Privacy
-
-All data stays on your machine. The only external call is an optional email nudge (no CLI scores, no raw data — just a red/yellow/green signal).
+[⬇ Download for Windows](https://github.com/the-X-alien/mh3-project/releases/latest) | [⬇ Download for Mac](https://github.com/the-X-alien/mh3-project/releases/latest)
 
 ## Web Dashboard
 
-The full React dashboard is deployed at **https://mh3-project.vercel.app** with:
-- Split-screen telemetry engine + task sandbox
-- 3D Three.js ambient sphere reflecting CLI
-- Chart.js CLI gauge
-- Framer Motion animations
-
-### Dev Commands
-
-```
-npm run dev          # Start Vite dev server
-npm run build        # Build web dashboard
-npm run preview      # Preview production build
-npm run extension:pack  # Package extension as ZIP
-```
+The web version is live at **https://mh3-project.vercel.app** — log in to view your stress history, manage email schedule, and track wellness trends.
 
 ## Stack
 
-- **Extension:** Vanilla JS, Chrome/Firefox MV3 APIs
-- **Dashboard:** React 18, Vite, TypeScript, Tailwind CSS
-- **Email:** Resend SDK via Vercel Function
-- **3D:** Three.js / @react-three/fiber
+- **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Framer Motion
+- **Desktop:** Electron with auto-update (electron-updater)
+- **Backend:** Convex (real-time DB + serverless functions)
+- **Auth:** Better Auth (Convex component)
+- **Email:** Resend
+- **AI:** Hack Club AI API + OpenRouter free tier
+
+## Dev Commands
+
+```
+npm run dev             # Start Vite dev server (web)
+npm run dev:electron    # Start Electron app in dev mode
+npm run build           # Build web + Electron TypeScript
+npm run pack            # Package for current platform (dev)
+npm run dist            # Build distributable installers
+npm run convex:deploy   # Deploy Convex functions to production
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_CONVEX_URL` | Convex deployment URL |
+| `CONVEX_DEPLOYMENT` | Convex deployment slug |
+| `BETTER_AUTH_SECRET` | Better Auth secret key |
+| `BETTER_AUTH_URL` | Auth callback URL |
+| `RESEND_API_KEY` | Resend API key for emails |
+
+## Privacy
+
+Activity monitoring stays entirely on your machine. The only external calls are:
+1. **AI analysis** — activity summary sent to Hack Club AI / OpenRouter (no personal data, just window titles and timing)
+2. **Email check-ins** — sent via Resend at your configured frequency
+3. **Convex sync** — authentication and schedule preferences

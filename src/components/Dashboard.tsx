@@ -1,56 +1,158 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useCognitiveLoad } from '@/context/CognitiveLoadContext'
-import TelemetryEngine from './TelemetryEngine'
-import TaskSandbox from './TaskSandbox'
-import OverloadOverlay from './OverloadOverlay'
-import TrustedContact from './TrustedContact'
-import NavPill from './NavPill'
-import { staggerContainer } from '@/lib/animations'
+import { motion } from 'framer-motion'
+import { Wind, Brain, Sparkles, Activity, Download, RefreshCw, Loader2 } from 'lucide-react'
+import { useWellness } from '@/context/WellnessContext'
+import ScheduleSettings from './ScheduleSettings'
+import AiInsights from './AiInsights'
+import { useState, useEffect } from 'react'
 
-export default function Dashboard() {
-  const { state } = useCognitiveLoad()
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'contact'>('dashboard')
+function UpdateManager() {
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
+  const [checking, setChecking] = useState(false)
+  const isElectron = typeof window !== 'undefined' && 'electronAPI' in window
+
+  useEffect(() => {
+    if (!isElectron) return
+    const unsub = window.electronAPI.onUpdateStatus(setUpdateStatus)
+    return unsub
+  }, [isElectron])
+
+  if (!isElectron) return null
+
+  const handleCheck = async () => {
+    setChecking(true)
+    await window.electronAPI.checkForUpdates()
+    setChecking(false)
+  }
+
+  const handleDownload = () => window.electronAPI.downloadUpdate()
+  const handleInstall = () => window.electronAPI.installUpdate()
+
+  const statusText = updateStatus?.status === 'available' ? `v${updateStatus.data?.version} available`
+    : updateStatus?.status === 'downloading' ? `Downloading ${Math.round(updateStatus.data?.percent || 0)}%`
+    : updateStatus?.status === 'downloaded' ? 'Ready to install'
+    : updateStatus?.status === 'error' ? 'Update failed'
+    : updateStatus?.status === 'checking' ? 'Checking...'
+    : null
 
   return (
-    <>
-      <NavPill activeTab={activeTab} onTabChange={setActiveTab} />
+    <div className="flex items-center justify-between rounded-xl bg-glass border border-white/5 px-4 py-3">
+      <div className="flex items-center gap-2">
+        <Download size={14} className="text-fog/50" />
+        <span className="font-body text-xs text-fog/60">
+          {statusText || 'Up to date'}
+        </span>
+        {updateStatus?.status === 'downloading' && (
+          <Loader2 size={12} className="animate-spin text-amber" />
+        )}
+      </div>
+      <div className="flex gap-2">
+        {updateStatus?.status === 'available' && (
+          <button onClick={handleDownload} className="font-body text-[11px] text-amber hover:text-pure transition-colors">
+            Download
+          </button>
+        )}
+        {updateStatus?.status === 'downloaded' && (
+          <button onClick={handleInstall} className="font-body text-[11px] text-green hover:text-pure transition-colors">
+            Install & Restart
+          </button>
+        )}
+        {(!updateStatus || updateStatus.status === 'not-available' || updateStatus.status === 'error') && (
+          <button onClick={handleCheck} disabled={checking} className="font-body text-[11px] text-fog/50 hover:text-pure transition-colors disabled:opacity-30">
+            {checking ? <Loader2 size={12} className="animate-spin" /> : 'Check for Updates'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
 
-      <motion.main
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-        className={`min-h-screen transition-all duration-800 ${
-          state.isOverloaded ? 'overload-bg' : ''
-        }`}
+export default function Dashboard() {
+  const { state, startBreathing, addCheckIn, resetSession } = useWellness()
+
+  const stressColor = state.stress < 30 ? 'text-green' : state.stress < 60 ? 'text-amber' : 'text-amber'
+
+  return (
+    <div className="flex flex-col gap-8 p-6 max-w-lg mx-auto pt-16">
+      <header className="text-center space-y-2">
+        <motion.h1
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="font-cursive text-3xl text-pure"
+        >
+          How are you feeling?
+        </motion.h1>
+        <p className="font-body text-sm text-fog">Take a moment to check in with yourself</p>
+      </header>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center gap-3 py-6"
       >
-        <div className="flex flex-col md:flex-row min-h-screen">
-          {/* Left Pane — Telemetry Engine */}
-          <div className="md:w-1/2 border-r-0 md:border-r border-graphite flex flex-col relative">
-            <div className="flex-1">
-              <TelemetryEngine />
-            </div>
-            <AnimatePresence>
-              {activeTab === 'contact' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                >
-                  <TrustedContact />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Right Pane — Task Sandbox */}
-          <div className="md:w-1/2 flex flex-col relative">
-            <TaskSandbox />
+        <div className="relative">
+          <motion.div
+            animate={{ scale: [1, 1.03, 1] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            className="w-28 h-28 rounded-full bg-glass border border-white/5 flex items-center justify-center"
+          >
+            <Brain size={44} className="text-pure/60" />
+          </motion.div>
+          <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-glass border border-white/5 flex items-center justify-center">
+            <Activity size={16} className={stressColor} />
           </div>
         </div>
-      </motion.main>
+        <div className="text-center">
+          <p className={`font-cursive text-2xl ${stressColor} transition-colors duration-700`}>
+            {state.stress === 0 ? 'At ease' : state.stress < 30 ? 'Calm' : state.stress < 60 ? 'Tense' : 'Stressed'}
+          </p>
+          <p className="font-mono text-caption text-fog/50 mt-0.5">
+            {state.sessionCount} sessions &middot; {state.checkIns} check-ins
+          </p>
+        </div>
+      </motion.div>
 
-      <OverloadOverlay />
-    </>
+      <div className="grid grid-cols-2 gap-3">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => { startBreathing(); addCheckIn() }}
+          className="flex flex-col items-center gap-2 px-4 py-5 rounded-2xl bg-glass border border-white/5 hover:border-amber/20 transition-all group"
+        >
+          <Wind size={22} className="text-amber group-hover:scale-110 transition-transform" />
+          <span className="font-body text-xs text-fog">Breathe</span>
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => resetSession()}
+          className="flex flex-col items-center gap-2 px-4 py-5 rounded-2xl bg-glass border border-white/5 hover:border-white/10 transition-all group"
+        >
+          <Sparkles size={22} className="text-fog group-hover:text-pure transition-colors" />
+          <span className="font-body text-xs text-fog">Reset</span>
+        </motion.button>
+      </div>
+
+      <AiInsights />
+
+      <UpdateManager />
+
+      <div className="rounded-2xl bg-glass border border-white/5 p-5">
+        <ScheduleSettings />
+      </div>
+
+      <div className="rounded-2xl bg-glass border border-white/5 p-5 space-y-3">
+        <h3 className="font-cursive text-lg text-pure">Session Activity</h3>
+        <div className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { label: 'Tab Switches', value: state.tabSwitches, color: 'text-fog' },
+            { label: 'Idle Events', value: state.idleEvents, color: 'text-fog' },
+            { label: 'Typing Spikes', value: state.typingSpikes, color: state.typingSpikes > 3 ? 'text-amber' : 'text-fog' },
+          ].map((s) => (
+            <div key={s.label} className="space-y-1">
+              <p className="font-mono text-lg text-pure">{s.value}</p>
+              <p className="font-body text-[10px] text-fog/60">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
