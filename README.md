@@ -1,6 +1,6 @@
-# Wellness Companion
+# Shanti
 
-A cross-platform mental wellness desktop app that monitors computer activity via AI to detect stress, triggers guided breathing exercises, and sends scheduled check-in emails.
+A cross-platform desktop wellness app that monitors computer activity via AI to detect stress, triggers guided breathing exercises, and sends scheduled check-in emails. *Shanti* (शांति) means "peace."
 
 ## Features
 
@@ -17,7 +17,7 @@ A cross-platform mental wellness desktop app that monitors computer activity via
 
 ## Web Dashboard
 
-The web version is live at **https://mh3-project.vercel.app** — log in to view your stress history, manage email schedule, and track wellness trends.
+The web version is live at **https://shanti.vercel.app** — log in to view your stress history, manage email schedule, and track wellness trends.
 
 ## Stack
 

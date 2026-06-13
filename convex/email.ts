@@ -81,7 +81,7 @@ export const sendWellnessEmail = action({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Mental Wellness <onboarding@resend.dev>",
+        from: "Shanti <onboarding@resend.dev>",
         to: email,
         subject: "Your wellness check-in",
         html: `
@@ -94,20 +94,20 @@ export const sendWellnessEmail = action({
               <h2 style="font-size:22px;font-weight:400;margin:0 0 12px;">Time for a check-in</h2>
               <p style="color:#999;font-size:14px;line-height:1.7;margin:0 0 24px;">
                 Take a moment to pause, breathe, and check in with how you're feeling. 
-                Your wellness companion is here — whenever you need it.
+                Shanti is here — whenever you need it.
               </p>
               <a href="${process.env.CONVEX_SITE_URL || "http://localhost:5173"}"
                  style="display:inline-block;padding:10px 20px;border-radius:8px;border:1px solid rgba(230,168,23,0.3);color:#e6a817;text-decoration:none;font-size:13px;">
-                Open Wellness
+                Open Shanti
               </a>
               <p style="color:#4d4d4d;font-size:12px;border-top:1px solid #222;padding-top:16px;margin-top:24px;">
-                Sent by your Wellness Companion
+                Sent by Shanti
               </p>
             </div>
           </body>
           </html>
         `,
-        text: "Time for a check-in. Take a moment to pause, breathe, and check in with how you're feeling. Open your wellness companion at the app to continue.",
+        text: "Time for a check-in. Take a moment to pause, breathe, and check in with how you're feeling. Open Shanti at the app to continue.",
       }),
     })
 

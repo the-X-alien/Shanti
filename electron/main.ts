@@ -129,7 +129,7 @@ function createWindow() {
 
 function createTray() {
   tray = new Tray(createTrayIcon())
-  tray.setToolTip('Wellness Companion')
+  tray.setToolTip('Shanti')
   updateTray()
 
   tray.on('double-click', () => {
