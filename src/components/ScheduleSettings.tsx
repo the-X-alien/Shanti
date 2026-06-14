@@ -35,7 +35,6 @@ export default function ScheduleSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: state.email,
-          name: (user?.user_metadata?.name as string) || undefined,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -52,14 +51,6 @@ export default function ScheduleSettings() {
     } finally {
       setTimeout(() => setTestStatus('idle'), 4000)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-4">
-        <Loader2 size={16} className="animate-spin text-fog" />
-      </div>
-    )
   }
 
   return (
