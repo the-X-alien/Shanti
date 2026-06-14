@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Wind, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
@@ -78,10 +78,8 @@ export default function SignIn() {
         className="w-full max-w-sm"
       >
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber to-amber/60 flex items-center justify-center">
-              <Wind size={16} className="text-void" />
-            </div>
+          <Link to="/" className="inline-flex items-center gap-2 mb-6">
+            <span className="text-2xl leading-none" role="img" aria-label="Shanti">🙏</span>
             <span className="font-cursive text-2xl text-pure">Shanti</span>
           </Link>
           <h1 className="font-cursive text-3xl text-pure mb-2">

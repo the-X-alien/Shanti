@@ -57,10 +57,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto w-full">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber to-amber/60 flex items-center justify-center">
-            <Wind size={14} className="text-void" />
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xl leading-none" role="img" aria-label="Shanti">🙏</span>
           <span className="font-cursive text-xl text-pure">Shanti</span>
         </div>
         <div className="flex items-center gap-4">
