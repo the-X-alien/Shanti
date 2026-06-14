@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Clock, Loader2, Check } from 'lucide-react'
+import { Clock, Check } from 'lucide-react'
 import { useWellness, EmailFrequency } from '@/context/WellnessContext'
-import { useQuery, useMutation } from 'convex/react'
-import { api } from '@convex/_generated/api'
 
 const frequencies: { value: EmailFrequency; label: string; desc: string }[] = [
   { value: 'off', label: 'Off', desc: 'No emails' },
@@ -16,30 +14,11 @@ const frequencies: { value: EmailFrequency; label: string; desc: string }[] = [
 
 export default function ScheduleSettings() {
   const { state, dispatch } = useWellness()
-  const schedule = useQuery(api.email.getSchedule)
-  const saveSchedule = useMutation(api.email.saveSchedule)
-  const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => {
-    if (schedule) {
-      dispatch({ type: 'SET_EMAIL', value: schedule.email })
-      dispatch({ type: 'SET_FREQUENCY', value: schedule.frequency })
-    }
-  }, [schedule, dispatch])
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await saveSchedule({ email: state.email, frequency: state.emailFrequency })
-      dispatch({ type: 'SET_FREQUENCY', value: state.emailFrequency })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch (e) {
-      console.error('Failed to save schedule:', e)
-    } finally {
-      setSaving(false)
-    }
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   return (
@@ -87,15 +66,11 @@ export default function ScheduleSettings() {
       <motion.button
         whileTap={{ scale: 0.98 }}
         onClick={handleSave}
-        disabled={saving || !state.email}
+        disabled={!state.email}
         className="w-full py-2.5 rounded-xl bg-amber/10 border border-amber/30 text-amber font-body text-sm hover:bg-amber/15 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {saving ? (
-          <Loader2 size={14} className="animate-spin" />
-        ) : saved ? (
-          <Check size={14} />
-        ) : null}
-        {saved ? 'Saved' : saving ? 'Saving...' : 'Save Schedule'}
+        {saved ? <Check size={14} /> : null}
+        {saved ? 'Saved' : 'Save Schedule'}
       </motion.button>
     </div>
   )

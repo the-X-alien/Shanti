@@ -1,6 +1,8 @@
 import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, NativeImage, shell, screen } from "electron";
 import { execFile } from "child_process";
 import path from "path";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createCanvas } = require("canvas");
 import { TabReader, TabSnapshot } from "./tabReader";
 
 let tray: Tray | null = null;
@@ -46,22 +48,34 @@ interface StressPoint {
 }
 const stressHistory: StressPoint[] = [];
 
-function createTrayIcon(): NativeImage {
-  const size = 16;
-  const buf = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const cx = x - size / 2 + 0.5;
-      const cy = y - size / 2 + 0.5;
-      const inside = Math.sqrt(cx * cx + cy * cy) < size / 2 - 1;
-      const i = (y * size + x) * 4;
-      buf[i] = 255;
-      buf[i + 1] = 255;
-      buf[i + 2] = 255;
-      buf[i + 3] = inside ? 220 : 0;
-    }
+function createTrayIcon(score?: number): NativeImage {
+  const size = 32;
+  const canvas = createCanvas(size, size);
+  const ctx = canvas.getContext("2d");
+
+  // Draw 🙏 emoji then recolor to white
+  ctx.clearRect(0, 0, size, size);
+  ctx.font = "22px 'Apple Color Emoji', serif";
+  ctx.textBaseline = "top";
+  ctx.fillText("🙏", 2, 1);
+  // Recolor emoji to white while preserving shape
+  ctx.globalCompositeOperation = "source-atop";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+  ctx.globalCompositeOperation = "source-over";
+
+  // Draw stress-color underline bar at bottom
+  let color = "#888888";
+  if (score !== undefined) {
+    if (score < 35)      color = "#69F0AE"; // green = calm
+    else if (score < 65) color = "#FFD54F"; // yellow = tense
+    else                 color = "#FF5252"; // red = stressed
   }
-  return nativeImage.createFromBuffer(buf, { width: size, height: size });
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 28, size, 4);
+
+  const buf: Buffer = canvas.toBuffer("image/png");
+  return nativeImage.createFromBuffer(buf).resize({ width: 16, height: 16 });
 }
 
 function showNotification(title: string, body: string): void {
@@ -209,7 +223,10 @@ function sendStressUpdate(): void {
   }
 
   const tag = data.score > 70 ? "HIGH" : data.score >= 40 ? "MED" : "LOW";
-  if (tray) tray.setToolTip(`Shanti Stress: ${data.score} (${tag})`);
+  if (tray) {
+    tray.setToolTip(`Shanti Stress: ${data.score} (${tag})`);
+    tray.setImage(createTrayIcon(data.score));
+  }
 }
 
 let rageWindow: BrowserWindow | null = null;

@@ -12,15 +12,14 @@
   "build": {
     "appId": "com.tabdashboard.app",
     "productName": "Tab Dashboard",
+    "files": [
+      "dist/**/*",
+      "src/renderer/**/*",
+      "node_modules/**/*"
+    ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
-    },
-    "win": {
-      "target": "nsis"
+      "target": "dir"
     }
   },
   "devDependencies": {
@@ -28,5 +27,8 @@
     "electron": "^42.4.0",
     "electron-builder": "^24.0.0",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "canvas": "^3.2.3"
   }
 }

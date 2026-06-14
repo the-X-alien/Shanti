@@ -10,68 +10,95 @@
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f1117; color: #e2e8f0; overflow: hidden;
-      width: 100vw; height: 100vh;
+      overflow: hidden; width: 100vw; height: 100vh;
     }
     #arena {
       position: relative; width: 100%; height: 100vh;
-      background: radial-gradient(ellipse at center, #1a1d27 0%, #0f1117 100%);
+      transition: background 0.6s ease;
     }
     .object {
       position: absolute; cursor: pointer;
-      font-size: 48px; transition: transform 0.1s;
-      width: 70px; height: 70px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px;
+      width: 80px; min-height: 80px;
+      padding: 8px 6px 6px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(4px);
+      transition: transform 0.1s, box-shadow 0.1s;
+      z-index: 2;
     }
-    .object:hover { transform: scale(1.15); background: rgba(255,255,255,0.08); }
+    .object:hover {
+      transform: scale(1.12);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      background: rgba(255,255,255,0.28);
+    }
+    .obj-emoji { font-size: 38px; line-height: 1; }
+    .obj-label {
+      font-size: 10px; font-weight: 600; color: rgba(0,0,0,0.6);
+      text-align: center; letter-spacing: 0.02em;
+      max-width: 70px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
     .object.breaking {
       pointer-events: none;
       animation: shatter 0.5s ease-out forwards;
     }
     @keyframes shatter {
-      0% { transform: scale(1); opacity: 1; }
-      30% { transform: scale(1.4); opacity: 0.8; }
-      100% { transform: scale(0.1) rotate(180deg); opacity: 0; }
+      0%   { transform: scale(1) rotate(0deg); opacity: 1; }
+      30%  { transform: scale(1.5) rotate(-10deg); opacity: 0.9; }
+      100% { transform: scale(0) rotate(200deg); opacity: 0; }
     }
     .object.breaking::after {
-      content: "💥"; position: absolute; font-size: 40px;
+      content: "💥"; position: absolute; font-size: 44px;
       animation: burst 0.6s ease-out forwards;
+      pointer-events: none;
     }
     @keyframes burst {
-      0% { transform: scale(0.5); opacity: 1; }
-      100% { transform: scale(2); opacity: 0; }
+      0%   { transform: scale(0.5); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
     }
     .debris {
       position: absolute; pointer-events: none;
-      width: 12px; height: 12px; border-radius: 50%;
-      animation: fly 0.8s ease-out forwards;
+      width: 10px; height: 10px; border-radius: 50%;
+      animation: fly 0.9s ease-out forwards;
+      z-index: 5;
     }
     @keyframes fly {
-      0% { transform: translate(0,0) scale(1); opacity: 1; }
+      0%   { transform: translate(0,0) scale(1); opacity: 1; }
       100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
     }
     #reset-btn {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: var(--accent, #6366f1); border: none; color: #fff;
-      padding: 12px 32px; border-radius: 10px; cursor: pointer;
-      font-size: 15px; font-weight: 600; z-index: 10;
-      transition: opacity 0.2s;
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #6366f1; border: none; color: #fff;
+      padding: 12px 36px; border-radius: 50px; cursor: pointer;
+      font-size: 15px; font-weight: 700; z-index: 10;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.5);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    #reset-btn:hover { opacity: 0.85; }
+    #reset-btn:hover { transform: translateX(-50%) scale(1.05); box-shadow: 0 6px 28px rgba(99,102,241,0.7); }
+    #reset-btn:active { transform: translateX(-50%) scale(0.97); }
     #info {
-      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-      font-size: 13px; color: #64748b; z-index: 10;
-      text-align: center;
+      position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+      font-size: 12px; color: rgba(0,0,0,0.45); z-index: 10;
+      text-align: center; pointer-events: none;
+      background: rgba(255,255,255,0.3); padding: 4px 14px; border-radius: 20px;
+      backdrop-filter: blur(6px);
+    }
+    #scene-label {
+      position: fixed; top: 14px; right: 20px;
+      font-size: 13px; font-weight: 700; color: rgba(0,0,0,0.5);
+      z-index: 10; letter-spacing: 0.04em; text-transform: uppercase;
+      background: rgba(255,255,255,0.3); padding: 4px 14px; border-radius: 20px;
+      backdrop-filter: blur(6px);
     }
   </style>
 </head>
 <body>
-  <div id="info">Click objects to smash them. Rage helps reset stress.</div>
+  <div id="info">Click items to smash them 💥</div>
+  <div id="scene-label">Living Room</div>
   <div id="arena"></div>
-  <button id="reset-btn">↻ Reset</button>
+  <button id="reset-btn">↻ New Room</button>
   <script type="module" src="../../dist/renderer/rage-room.js"></script>
 </body>
 </html>
