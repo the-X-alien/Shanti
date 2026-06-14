@@ -13,6 +13,21 @@
 </head>
 <body>
 
+  <!-- Survey overlay -->
+  <div id="survey-overlay" class="overlay hidden">
+    <div class="overlay-card" style="max-width:380px;width:100%">
+      <div class="overlay-header">
+        <span class="overlay-title">Mental Health Check‑In</span>
+        <button id="survey-cancel" class="icon-btn">✕</button>
+      </div>
+      <div id="survey-questions" class="survey-questions"></div>
+      <div class="overlay-actions">
+        <button id="survey-cancel-btn" class="btn-ghost">Cancel</button>
+        <button id="survey-submit" class="btn-amber">Submit</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Breathing overlay (auto-triggered) -->
   <div id="alarm-overlay" class="overlay hidden">
     <div class="overlay-card">
@@ -43,6 +58,7 @@
         <span class="brand-name">Shanti</span>
       </div>
       <div class="header-actions">
+        <button id="survey-btn" class="btn-ghost-sm">Check‑in</button>
         <button id="rage-btn" class="btn-ghost-sm rage">Rage Room</button>
       </div>
     </header>

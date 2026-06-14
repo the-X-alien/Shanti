@@ -41,6 +41,7 @@ interface TabDashboardAPI {
   clearAlarm: () => void;
   onAlarmState: (cb: (active: boolean) => void) => void;
   breathComplete: () => void;
+  setSurveyAdjustment: (adj: number) => Promise<void>;
   openWebDashboard: () => void;
 }
 
@@ -251,6 +252,92 @@ function renderLoneliness(data: LonelinessData): void {
   }
 }
 
+// ── Survey ──
+
+const SURVEY_QUESTIONS = [
+  { id: "stress-level", text: "Current stress level?", em: "(1 = relaxed, 5 = overwhelmed)", options: ["1", "2", "3", "4", "5"] },
+  { id: "anxiety", text: "Feeling anxious today?", options: ["Not at all", "A little", "Moderately", "Very"] },
+  { id: "social", text: "Meaningful social interaction today?", options: ["Yes", "No"] },
+  { id: "energy", text: "Energy level?", options: ["Low", "Medium", "High"] },
+  { id: "overwhelm", text: "Overwhelmed by workload?", options: ["Not at all", "A little", "Somewhat", "Very"] },
+  { id: "break", text: "Taken a break in the last 2 hours?", options: ["Yes", "No"] },
+  { id: "sleep", text: "Sleep quality last night?", options: ["Poor", "Fair", "Good"] },
+];
+
+let surveyAnswers: Record<string, string> = {};
+
+function openSurvey(): void {
+  const overlay = document.getElementById("survey-overlay");
+  const container = document.getElementById("survey-questions");
+  if (!overlay || !container) return;
+  surveyAnswers = {};
+  container.innerHTML = SURVEY_QUESTIONS.map(q => `
+    <div class="survey-question">
+      <div class="survey-q-text">${q.text} <span class="survey-em">${q.em || ""}</span></div>
+      <div class="survey-q-options" data-q="${q.id}">
+        ${q.options.map(o => `<span class="survey-opt" data-value="${o}">${o}</span>`).join("")}
+      </div>
+    </div>
+  `).join("");
+  container.querySelectorAll(".survey-opt").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const parent = btn.parentElement;
+      if (!parent) return;
+      parent.querySelectorAll(".survey-opt").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      surveyAnswers[parent.dataset.q || ""] = (btn as HTMLElement).dataset.value || "";
+    });
+  });
+  overlay.classList.remove("hidden");
+}
+
+function cancelSurvey(): void {
+  document.getElementById("survey-overlay")?.classList.add("hidden");
+}
+
+async function submitSurvey(): Promise<void> {
+  const answered = Object.keys(surveyAnswers).length;
+  if (answered < SURVEY_QUESTIONS.length) return;
+
+  const stressDelta = (Number(surveyAnswers["stress-level"]) || 3) - 3;
+  const anxietyDelta: Record<string, number> = { "Not at all": -8, "A little": 0, "Moderately": 8, "Very": 16 };
+  const socialDelta: Record<string, number> = { "Yes": -12, "No": 8 };
+  const energyDelta: Record<string, number> = { "Low": 8, "Medium": 0, "High": -8 };
+  const overwhelmDelta: Record<string, number> = { "Not at all": -8, "A little": 0, "Somewhat": 8, "Very": 16 };
+  const breakDelta: Record<string, number> = { "Yes": -8, "No": 8 };
+  const sleepDelta: Record<string, number> = { "Poor": 12, "Fair": 0, "Good": -8 };
+
+  const adjustment = [
+    stressDelta * 5,
+    anxietyDelta[surveyAnswers["anxiety"]] || 0,
+    socialDelta[surveyAnswers["social"]] || 0,
+    energyDelta[surveyAnswers["energy"]] || 0,
+    overwhelmDelta[surveyAnswers["overwhelm"]] || 0,
+    breakDelta[surveyAnswers["break"]] || 0,
+    sleepDelta[surveyAnswers["sleep"]] || 0,
+  ].reduce((a, b) => a + b, 0);
+
+  await window.tabDashboard.setSurveyAdjustment(adjustment);
+
+  // Post to website dashboard so it shows in History
+  try {
+    const stress = await window.tabDashboard.getStress();
+    await fetch("https://mh3-project.vercel.app/api/stress-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        score: Math.max(0, Math.min(100, stress.score + adjustment)),
+        factors: stress.factors,
+        surveyAnswers,
+        source: "desktop-checkin",
+      }),
+    });
+  } catch { /* best-effort */ }
+
+  document.getElementById("survey-overlay")?.classList.add("hidden");
+  showNotification("Check-in submitted — stress score updated.");
+}
+
 // ── Breathing ──
 
 let breathInterval: ReturnType<typeof setInterval> | null = null;
@@ -433,6 +520,10 @@ async function init(): Promise<void> {
   setupToggle();
 
   document.getElementById("open-prefs-btn")?.addEventListener("click", () => api.openAccessibilityPrefs());
+  document.getElementById("survey-btn")?.addEventListener("click", openSurvey);
+  document.getElementById("survey-submit")?.addEventListener("click", () => void submitSurvey());
+  document.getElementById("survey-cancel")?.addEventListener("click", cancelSurvey);
+  document.getElementById("survey-cancel-btn")?.addEventListener("click", cancelSurvey);
   document.getElementById("rage-btn")?.addEventListener("click", () => api.openRageRoom());
   document.getElementById("open-dashboard-btn")?.addEventListener("click", () => api.openWebDashboard());
 }

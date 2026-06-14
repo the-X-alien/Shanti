@@ -58,7 +58,7 @@ function extractTabTitle(windowTitle: string): string {
   return result;
 }
 
-function getActiveWindow(): Promise<{ owner: string; title: string } | null> {
+function getActiveWindowMac(): Promise<{ owner: string; title: string } | null> {
   const script = `
 tell application "System Events"
   set frontProcess to first application process whose frontmost is true
@@ -73,18 +73,46 @@ return appName & "|||" & winTitle
 `;
   return new Promise((resolve) => {
     execFile("/usr/bin/osascript", ["-e", script], { timeout: 3000 }, (err, stdout) => {
-      if (err || !stdout) {
-        resolve(null);
-        return;
-      }
+      if (err || !stdout) { resolve(null); return; }
       const parts = stdout.trim().split("|||");
-      if (parts.length !== 2) {
-        resolve(null);
-        return;
-      }
+      if (parts.length !== 2) { resolve(null); return; }
       resolve({ owner: parts[0], title: parts[1] });
     });
   });
+}
+
+function getActiveWindowWindows(): Promise<{ owner: string; title: string } | null> {
+  const script = [
+    "Add-Type @\"",
+    "using System; using System.Runtime.InteropServices; using System.Text;",
+    "public class Win32 {",
+    "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow();",
+    "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);",
+    "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);",
+    "}",
+    "\"@",
+    "$hwnd = [Win32]::GetForegroundWindow()",
+    "$sb = New-Object System.Text.StringBuilder 512",
+    "[Win32]::GetWindowText($hwnd, $sb, 512) | Out-Null",
+    "$title = $sb.ToString()",
+    "$pid2 = 0",
+    "[Win32]::GetWindowThreadProcessId($hwnd, [ref]$pid2) | Out-Null",
+    "$proc = Get-Process -Id $pid2 -ErrorAction SilentlyContinue",
+    "$name = if ($proc) { $proc.Name } else { '' }",
+    "Write-Output ($name + '|||' + $title)",
+  ].join("; ");
+  return new Promise((resolve) => {
+    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { timeout: 5000 }, (err, stdout) => {
+      if (err || !stdout) { resolve(null); return; }
+      const parts = stdout.trim().split("|||");
+      if (parts.length !== 2) { resolve(null); return; }
+      resolve({ owner: parts[0], title: parts[1] });
+    });
+  });
+}
+
+function getActiveWindow(): Promise<{ owner: string; title: string } | null> {
+  return process.platform === "win32" ? getActiveWindowWindows() : getActiveWindowMac();
 }
 
 export type TabUpdateCallback = (snapshot: TabSnapshot) => void;
