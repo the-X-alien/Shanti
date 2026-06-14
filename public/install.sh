@@ -1,59 +1,105 @@
 #!/bin/bash
+# Shanti — Tab Viewer installer (macOS)
+# Clones the repo, builds the desktop app, and launches it as a menu bar app.
+# Usage: curl -fsSL https://mh3-project.vercel.app/install.sh | sh
+
 set -e
 
-REPO="the-X-alien/mh3-project"
-APP_NAME="Tab Dashboard"
-INSTALL_DIR="/Applications"
+REPO="https://github.com/the-X-alien/mh3-project.git"
+APP_DIR="$HOME/Library/Application Support/Shanti"
+LAUNCH_SCRIPT="$HOME/.local/bin/shanti"
+
+say()  { printf "  \033[96m%s\033[0m\n" "$1"; }
+ok()   { printf "  \033[32m✓ %s\033[0m\n" "$1"; }
+fail() { printf "  \033[31m✗ %s\033[0m\n" "$1"; exit 1; }
 
 echo ""
-echo "  🙏 Shanti — Installing..."
+echo "  🙏 Shanti — Tab Viewer"
 echo ""
 
-# Detect OS
-OS="$(uname -s)"
-ARCH="$(uname -m)"
+# ── macOS only ──────────────────────────────────────────────────
+[ "$(uname -s)" = "Darwin" ] || fail "This installer supports macOS only."
 
-if [ "$OS" != "Darwin" ]; then
-  echo "  ✗ Shanti currently supports macOS only."
-  exit 1
+# ── Prerequisites ───────────────────────────────────────────────
+if ! command -v git &>/dev/null; then
+  say "Git not found. Install Xcode Command Line Tools? (y/n)"
+  read -r ans
+  [ "$ans" = "y" ] && xcode-select --install || fail "Git is required. Install it and re-run."
 fi
 
-# Get latest release download URL
-RELEASE_URL="https://api.github.com/repos/${REPO}/releases/latest"
-DOWNLOAD_URL=$(curl -fsSL "$RELEASE_URL" | grep "browser_download_url" | grep "\.dmg" | head -1 | cut -d '"' -f 4)
-
-if [ -z "$DOWNLOAD_URL" ]; then
-  # Fall back to direct app copy from known location
-  echo "  → No release found. Trying direct install..."
-  DOWNLOAD_URL=""
+if ! command -v node &>/dev/null; then
+  fail "Node.js 18+ is required. Install it from https://nodejs.org and re-run."
 fi
 
-TMPDIR_SHANTI=$(mktemp -d)
-trap 'rm -rf "$TMPDIR_SHANTI"' EXIT
+NODE_MAJOR=$(node -e "process.stdout.write(process.versions.node.split('.')[0])")
+[ "$NODE_MAJOR" -ge 18 ] 2>/dev/null || fail "Node.js 18+ required (found $(node -v)). Please upgrade."
 
-if [ -n "$DOWNLOAD_URL" ]; then
-  echo "  → Downloading Shanti..."
-  curl -fsSL -o "$TMPDIR_SHANTI/Shanti.dmg" "$DOWNLOAD_URL"
-
-  echo "  → Mounting disk image..."
-  hdiutil attach "$TMPDIR_SHANTI/Shanti.dmg" -mountpoint "$TMPDIR_SHANTI/mount" -quiet
-
-  echo "  → Copying to Applications..."
-  cp -R "$TMPDIR_SHANTI/mount/${APP_NAME}.app" "${INSTALL_DIR}/"
-
-  hdiutil detach "$TMPDIR_SHANTI/mount" -quiet
+# ── Fetch source ─────────────────────────────────────────────────
+if [ -d "$APP_DIR/.git" ]; then
+  say "Updating existing install..."
+  git -C "$APP_DIR" fetch --depth 1 origin main
+  git -C "$APP_DIR" reset --hard origin/main
 else
-  echo ""
-  echo "  ✗ Could not find a release build."
-  echo "    Please download Shanti manually from:"
-  echo "    https://github.com/${REPO}/releases"
-  echo ""
-  exit 1
+  say "Cloning Shanti..."
+  rm -rf "$APP_DIR"
+  git clone --depth 1 "$REPO" "$APP_DIR"
 fi
 
+cd "$APP_DIR/tabdashboardv2"
+
+# ── Build ────────────────────────────────────────────────────────
+say "Installing dependencies (this may take a minute)..."
+npm install --no-audit --no-fund --silent
+
+say "Building..."
+npm run build
+
+# ── Launcher script ──────────────────────────────────────────────
+mkdir -p "$(dirname "$LAUNCH_SCRIPT")"
+cat > "$LAUNCH_SCRIPT" <<'LAUNCHER'
+#!/bin/bash
+APP_DIR="$HOME/Library/Application Support/Shanti/tabdashboardv2"
+cd "$APP_DIR"
+exec npx electron --no-sandbox . "$@" &>/dev/null &
+LAUNCHER
+chmod +x "$LAUNCH_SCRIPT"
+
+# Also create an .app wrapper so it shows in Spotlight / Applications
+APP_BUNDLE="$HOME/Applications/Shanti.app"
+mkdir -p "$APP_BUNDLE/Contents/MacOS"
+cat > "$APP_BUNDLE/Contents/MacOS/Shanti" <<APPSCRIPT
+#!/bin/bash
+APP_DIR="\$HOME/Library/Application Support/Shanti/tabdashboardv2"
+cd "\$APP_DIR"
+exec npx electron --no-sandbox . &>/dev/null &
+APPSCRIPT
+chmod +x "$APP_BUNDLE/Contents/MacOS/Shanti"
+
+cat > "$APP_BUNDLE/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>Shanti</string>
+  <key>CFBundleDisplayName</key><string>Shanti</string>
+  <key>CFBundleIdentifier</key><string>com.shanti.tabviewer</string>
+  <key>CFBundleVersion</key><string>1.0</string>
+  <key>CFBundleExecutable</key><string>Shanti</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSUIElement</key><true/>
+</dict>
+</plist>
+PLIST
+
+# ── Launch ───────────────────────────────────────────────────────
+say "Launching Shanti..."
+cd "$APP_DIR/tabdashboardv2"
+npx electron --no-sandbox . &>/dev/null &
+
 echo ""
-echo "  ✓ Shanti installed to ${INSTALL_DIR}/${APP_NAME}.app"
+ok "Shanti installed and running!"
 echo ""
-echo "  Launch it from Spotlight or Applications."
-echo "  It will appear as 🙏 in your menu bar."
+echo "  Look for 🙏 in your menu bar."
+echo "  To relaunch: open ~/Applications/Shanti.app"
+echo "            or run: shanti  (after restarting your terminal)"
 echo ""
