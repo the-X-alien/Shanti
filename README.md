@@ -24,7 +24,7 @@ Devpost at **https://devpost.com/software/shanti-uqrlty**
 
 - **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Framer Motion, Lenis Scroll
 - **Desktop:** Electron with auto-update (electron-updater)
-- **Backend:** Convex (real-time Postgres DB + Auth)
+- **Backend:** Supabase (real-time Postgres DB + Auth)
 - **Auth:** Better Auth
 - **Email:** Resend
 - **AI:** Custom Algorithim
